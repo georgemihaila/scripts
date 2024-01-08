@@ -1,0 +1,41 @@
+ #!/bin/bash
+
+# Script name: ssh-keypairgen
+
+# Check if at least one argument is provided
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <key pair name> [password] [-ppk|--print-private-key]"
+    exit 1
+fi
+
+KEY_NAME=$1
+PASSWORD=$2
+PRINT_PRIVATE_KEY=0
+
+# Check for the -ppk or --print-private-key flag
+for arg in "$@"; do
+    if [[ $arg == "-ppk" || $arg == "--print-private-key" ]]; then
+        PRINT_PRIVATE_KEY=1
+    fi
+done
+
+# Define key file paths
+PRIVATE_KEY_FILE="$HOME/.ssh/${KEY_NAME}"
+PUBLIC_KEY_FILE="${PRIVATE_KEY_FILE}.pub"
+
+# Generate the key pair
+if [ -z "$PASSWORD" ]; then
+    ssh-keygen -t rsa -b 4096 -f "${PRIVATE_KEY_FILE}" -N ''
+else
+    ssh-keygen -t rsa -b 4096 -f "${PRIVATE_KEY_FILE}" -N "${PASSWORD}"
+fi
+
+# Output the public key
+echo "Public Key:"
+cat "${PUBLIC_KEY_FILE}"
+
+# Optionally output the private key
+if [ "$PRINT_PRIVATE_KEY" -eq 1 ]; then
+    echo "Private Key (CAUTION: Sensitive Data):"
+    cat "${PRIVATE_KEY_FILE}"
+fi

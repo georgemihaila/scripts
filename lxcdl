@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Path/filename: /path/to/lxcdl
+# This script checks for an existing ZIP file before downloading an LXC image from linuxcontainers.org.
+# It then extracts the rootfs and repacks it into a tar.gz format suitable for Proxmox or other LXC uses.
+
+# Usage: ./lxcdl image-debian 'amd64,23.05,default'
+# The script expects an image name and a CSV configuration matrix.
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <image-name> <configuration-matrix>"
+    echo "Example: $0 image-debian 'amd64,23.05,default'"
+    exit 1
+fi
+
+image_name=$1
+config_matrix=$2
+
+# Parse the configuration matrix into individual variables
+IFS=',' read -r arch release variant <<< "$config_matrix"
+
+# Define the zip file name
+zip_filename="${image_name}.zip"
+
+# Check if the zip file already exists
+if [ -f "$zip_filename" ]; then
+    echo "Zip file $zip_filename already exists, skipping download."
+else
+    # Correct the URL construction based on the user-provided example
+    base_url="https://jenkins.linuxcontainers.org/job"
+    url="${base_url}/${image_name}/architecture=${arch},release=${release},variant=${variant}/lastSuccessfulBuild/artifact/*zip*/archive.zip"
+
+    # Download the image using curl with verbose output
+    echo "Downloading image..."
+    curl -L -o "$zip_filename" "$url" || { echo "Download failed"; exit 1; }
+fi
+
+# Unzip the downloaded file to extract rootfs.tar.xz
+echo "Unzipping image..."
+unzip "$zip_filename" -d "${image_name}" || { echo "Unzip failed"; exit 1; }
+cd "./${image_name}/archive"
+pwd
+ls
+mkdir rootfs
+tar -xJf ./rootfs.tar.xz -C ./rootfs || { echo "Extracting rootfs failed"; exit 1; }
+
+# Run distrobuilder to pack the rootfs into an LXC compatible image
+echo "Repacking image with distrobuilder..."
+sudo /snap/bin/distrobuilder pack-lxc image.yaml ./rootfs || { echo "distrobuilder failed"; exit 1; }
+
+# Define the output filename
+output_filename="${image_name}-${variant}-${release}-1_${arch}.tar.gz"
+
+# Repack the rootfs into a tar.gz file with the correct naming convention
+echo "Creating final tar.gz file..."
+tar -czf "$output_filename" -C rootfs . || { echo "Repack failed"; exit 1; }
+
+echo "Image is ready: $output_filename"

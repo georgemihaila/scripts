@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Script Name: tgz-install
+
+# Check if a file name was provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <filename.tar.gz>"
+    exit 1
+fi
+
+FILE=$1
+
+# Check if the file exists
+if [ ! -f "$FILE" ]; then
+    echo "File not found: $FILE"
+    exit 1
+fi
+
+# Extract the tar.gz file
+tar -xzf "$FILE"
+
+# Remove the .tar.gz extension to get the directory name
+DIR_NAME=${FILE%.tar.gz}
+
+# Change into the directory
+cd "$DIR_NAME" || exit
+
+# Run the installation commands with sudo to ensure they have the necessary privileges
+sudo ./configure
+sudo make
+sudo make install
+
+echo "Installation completed."

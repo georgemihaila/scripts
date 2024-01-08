@@ -1,0 +1,4 @@
+#!/bin/bash
+# $1 - infile
+# $2 - outfile
+openssl rsa -in $1 -text > $2

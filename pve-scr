@@ -1,0 +1,4 @@
+#!/bin/bash
+cd /etc/pve/local
+rm pve*ssl.*
+pvecm updatecerts --force

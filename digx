@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Check if domain and nameserver are provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <domain> <nameserver>"
+    exit 1
+fi
+
+# Domain and nameserver
+DOMAIN=$1
+NAMESERVER=$2
+
+# List of DNS record types to query
+RECORD_TYPES=("A" "AAAA" "CNAME" "MX" "NS" "PTR" "SOA" "SRV" "TXT")
+
+# Loop through each record type and query it
+for TYPE in "${RECORD_TYPES[@]}"; do
+    echo "Querying $TYPE records for $DOMAIN using nameserver $NAMESERVER"
+    dig @$NAMESERVER $DOMAIN $TYPE +noall +answer
+    echo
+done
+
+exit 0
